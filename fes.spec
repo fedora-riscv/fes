@@ -60,7 +60,9 @@ rm %{buildroot}%{_libdir}/libfes.la
 pushd src
     chmod +x test/test_suite.py
     make check
+%if 0%{?fedora} > 18
     cat test/test_suite.py.log
+%endif
 popd
 
 %post -p /sbin/ldconfig

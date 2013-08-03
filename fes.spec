@@ -2,7 +2,7 @@
 
 Name:		fes
 Version:	0.1
-Release:	4%{?dist}
+Release:	5%{?dist}
 License:	GPLv3+
 Group:		Applications/Engineering
 Summary:	Fast Exhaustive Search
@@ -81,6 +81,9 @@ popd
 %{_libdir}/libfes.so
 
 %changelog
+* Sat Aug 03 2013 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 0.1-5
+- Rebuilt for https://fedoraproject.org/wiki/Fedora_20_Mass_Rebuild
+
 * Sat Jun  8 2013 pcpa <paulo.cesar.pereira.de.andrade@gmail.com> - 0.1-4
 - Add ldconfig to post and postun (#914936#c5).
 - Mark stack as not executable in .s to .o compilation (#914936#c5).

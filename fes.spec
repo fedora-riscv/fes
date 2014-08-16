@@ -2,7 +2,7 @@
 
 Name:		fes
 Version:	0.1
-Release:	6%{?dist}
+Release:	7%{?dist}
 License:	GPLv3+
 Group:		Applications/Engineering
 Summary:	Fast Exhaustive Search
@@ -81,6 +81,9 @@ popd
 %{_libdir}/libfes.so
 
 %changelog
+* Sat Aug 16 2014 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 0.1-7
+- Rebuilt for https://fedoraproject.org/wiki/Fedora_21_22_Mass_Rebuild
+
 * Sat Jun 07 2014 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 0.1-6
 - Rebuilt for https://fedoraproject.org/wiki/Fedora_21_Mass_Rebuild
 

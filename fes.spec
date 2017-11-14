@@ -2,7 +2,7 @@
 
 Name:		fes
 Version:	0.1
-Release:	12%{?dist}
+Release:	13%{?dist}
 License:	GPLv3+
 Group:		Applications/Engineering
 Summary:	Fast Exhaustive Search
@@ -13,7 +13,6 @@ BuildRequires:	autoconf
 BuildRequires:	automake
 BuildRequires:	libtool
 BuildRequires:	python2
-BuildRequires:	tetex
 BuildRequires:	texlive-collection-science
 Patch0:		%{name}-dynamic.patch
 
@@ -39,6 +38,8 @@ for %{name}.
 %patch0 -p1
 
 pushd src
+    # Correct FTBFS in rawhide
+    sed -e 's/ -Werror//' -i configure.ac
     autoreconf -ifs
 popd
 
@@ -81,6 +82,9 @@ popd
 %{_libdir}/libfes.so
 
 %changelog
+* Tue Nov 14 2017 pcpa <paulo.cesar.pereira.de.andrade@gmail.com> - 0.1-13
+- Correct FTBFS in rawhide (#1423562)
+
 * Wed Aug 02 2017 Fedora Release Engineering <releng@fedoraproject.org> - 0.1-12
 - Rebuilt for https://fedoraproject.org/wiki/Fedora_27_Binutils_Mass_Rebuild
 

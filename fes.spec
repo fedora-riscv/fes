@@ -2,7 +2,7 @@
 
 Name:		fes
 Version:	0.1
-Release:	13%{?dist}
+Release:	14%{?dist}
 License:	GPLv3+
 Group:		Applications/Engineering
 Summary:	Fast Exhaustive Search
@@ -82,6 +82,9 @@ popd
 %{_libdir}/libfes.so
 
 %changelog
+* Wed Feb 07 2018 Fedora Release Engineering <releng@fedoraproject.org> - 0.1-14
+- Rebuilt for https://fedoraproject.org/wiki/Fedora_28_Mass_Rebuild
+
 * Tue Nov 14 2017 pcpa <paulo.cesar.pereira.de.andrade@gmail.com> - 0.1-13
 - Correct FTBFS in rawhide (#1423562)
 

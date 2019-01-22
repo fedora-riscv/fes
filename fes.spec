@@ -66,9 +66,7 @@ pushd src
 %endif
 popd
 
-%post -p /sbin/ldconfig
-
-%postun -p /sbin/ldconfig
+%ldconfig_scriptlets
 
 %files
 %doc src/AUTHORS

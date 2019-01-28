@@ -4,7 +4,6 @@ Name:		fes
 Version:	0.1
 Release:	15%{?dist}
 License:	GPLv3+
-Group:		Applications/Engineering
 Summary:	Fast Exhaustive Search
 URL:		http://www.lifl.fr/~bouillag
 Source0:	http://www.lifl.fr/~bouillag/download/fes-0.1.spkg
@@ -26,7 +25,6 @@ solutions per CPU cycle on each core).
 
 %package	devel
 Summary:	Development files for %{name}
-Group:		Development/Libraries
 Requires:	%{name}%{?_isa} = %{version}-%{release}
 
 %description	devel

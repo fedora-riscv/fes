@@ -1,0 +1,11 @@
+--- src/src/idx_LUT.h.orig	2013-09-18 02:06:55.000000000 -0600
++++ src/src/idx_LUT.h	2019-02-06 11:19:09.231044885 -0700
+@@ -79,7 +79,7 @@
+ typedef uint32_t LUT_int_t;
+ 
+ // Actual type of the lookup tables
+-typedef const LUT_int_t const * const * const LUT_t;
++typedef const LUT_int_t * const * const LUT_t;
+ 
+ // A "package" that wraps the actual lookup tables
+ // along with useful informations

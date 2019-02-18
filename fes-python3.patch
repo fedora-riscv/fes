@@ -1,0 +1,1117 @@
+--- src/src/boilerplate_generator.py.orig	2013-09-18 02:06:55.000000000 -0600
++++ src/src/boilerplate_generator.py	2019-02-06 11:39:30.945568833 -0700
+@@ -16,40 +16,40 @@ def popcount(n):
+ def data_reference(array, indices):
+     if indices == []:
+         return array + "[ 0 ]"
+-    return "{array}[ idx_{i}(LUT, {stuff}) ]".format(array=array, i=len(indices), stuff=string.join( indices, ", "))
++    return "{array}[ idx_{i}(LUT, {stuff}) ]".format(array=array, i=len(indices), stuff=", ".join( indices ))
+     
+ 
+ # generates the initialisation of the derivatives
+ def gen_init_code(degree):
+     idx = [ "i{0}".format(j) for j in range(degree+1) ]
+-    print "  // computes the derivatives required by the enumeration kernel up to degree {d}".format(d=degree)
+-    print "  // this is done in-place, meaning that if `F` described the coefficients of the"
+-    print "  // polynomials before, then afterwards, they describe the derivatives"
+-    print ""
++    print("  // computes the derivatives required by the enumeration kernel up to degree {d}".format(d=degree))
++    print("  // this is done in-place, meaning that if `F` described the coefficients of the")
++    print("  // polynomials before, then afterwards, they describe the derivatives")
++    print("")
+ 
+     for updatee_degree in range(1, degree):
+         for updater_degree in range(updatee_degree+1, min(degree,2*updatee_degree)+1):
+-            print "  // here, degree-{0} terms are affected by degree-{1} terms".format(updatee_degree, updater_degree)
+-            print '  for(int {idx}={start}; {idx}<n; {idx}++) {{'.format(idx=idx[updatee_degree-1], start=updatee_degree)
++            print("  // here, degree-{0} terms are affected by degree-{1} terms".format(updatee_degree, updater_degree))
++            print('  for(int {idx}={start}; {idx}<n; {idx}++) {{'.format(idx=idx[updatee_degree-1], start=updatee_degree))
+             for i in range(updatee_degree-2, -1, -1):
+-                print '{pad}  for(int {idx}={start}; {idx}<{prev_idx}; {idx}++) {{'.format(pad='  '*(updatee_degree-i), \
+-                                                                               idx=idx[i], start=i, prev_idx=idx[i+1])            
++                print('{pad}  for(int {idx}={start}; {idx}<{prev_idx}; {idx}++) {{'.format(pad='  '*(updatee_degree-i), \
++                                                                               idx=idx[i], start=i, prev_idx=idx[i+1]))
+             updatee = data_reference('F', idx[:updatee_degree])
+-            conditions = [ idx[0] + "  != 0 " ] + map( lambda i: idx[i] + "-1 > " + idx[i-1], range(1, updatee_degree))
++            conditions = [ idx[0] + "  != 0 " ] + [idx[i] + "-1 > " + idx[i-1] for i in range(1, updatee_degree)]
+ 
+-            for subset in itertools.combinations(range(updatee_degree), updater_degree-updatee_degree):
+-                update_condition = string.join( map(lambda i:conditions[i], subset), " && ")
++            for subset in itertools.combinations(list(range(updatee_degree)), updater_degree-updatee_degree):
++                update_condition = " && ".join( [conditions[i] for i in subset])
+                 updater_idx = idx[:updatee_degree]
+                 for foo,i in enumerate(subset):
+                     updater_idx.insert(i+foo, idx[i]+"-1")
+                 updater = data_reference('F', updater_idx)
+-                print "{pad}    if ({cond}) {lhs} ^= {rhs};".format(pad='  '*updatee_degree, cond=update_condition, lhs=updatee, rhs=updater)
++                print("{pad}    if ({cond}) {lhs} ^= {rhs};".format(pad='  '*updatee_degree, cond=update_condition, lhs=updatee, rhs=updater))
+ 
+-            print '  {closing}'.format(closing='}'*updatee_degree)
+-            print ''
++            print('  {closing}'.format(closing='}'*updatee_degree))
++            print('')
+ #    print '}'
+-    print ''
+-    print ''
++    print('')
++    print('')
+ 
+ 
+ 
+@@ -60,26 +60,26 @@ def gen_steps(degree,simd=False, T=2):
+     for w in range(degree+1):
+         args = idx[:w]
+         
+-        print "#define STEP_{w}({args}) {{ \\".format(w=w, args=string.join( args + ["i"], "," ))
++        print("#define STEP_{w}({args}) {{ \\".format(w=w, args=",".join( args + ["i"] )))
+         for i in range(w-1,0,-1):
+-            print "  F[ {LHS} ] ^= F [ {RHS} ]; \\".format(LHS=idx[i-1], RHS=idx[i])
++            print("  F[ {LHS} ] ^= F [ {RHS} ]; \\".format(LHS=idx[i-1], RHS=idx[i]))
+         if w > 0:
+-            print "  F[ 0 ] ^= F [ {RHS} ]; \\".format(RHS=idx[0])
++            print("  F[ 0 ] ^= F [ {RHS} ]; \\".format(RHS=idx[0]))
+         if simd:
+-            print '  const simd_t Mask = _mm_cmpeq_epi{}(F[ 0 ], simd_zero); \\'.format(128>>T)
+-            print '  const int mask = _mm_movemask_epi8(Mask);  \\'
+-            print '  if (unlikely(mask)) { \\'
++            print('  const simd_t Mask = _mm_cmpeq_epi{}(F[ 0 ], simd_zero); \\'.format(128>>T))
++            print('  const int mask = _mm_movemask_epi8(Mask);  \\')
++            print('  if (unlikely(mask)) { \\')
+         else:
+-            print "  if (unlikely(F[ 0 ] == 0)) { \\"
+-        print "      solution_buffer[n_solutions_found].int_idx = i; \\"
++            print("  if (unlikely(F[ 0 ] == 0)) { \\")
++        print("      solution_buffer[n_solutions_found].int_idx = i; \\")
+         if simd:
+-            print "      solution_buffer[n_solutions_found].mask = mask; \\"
++            print("      solution_buffer[n_solutions_found].mask = mask; \\")
+         else:
+-            print "      solution_buffer[n_solutions_found].mask = 0x000f; \\"    
+-        print "      n_solutions_found++; \\"
+-        print "   }\\" 
+-        print "}"
+-        print ""
++            print("      solution_buffer[n_solutions_found].mask = 0x000f; \\")
++        print("      n_solutions_found++; \\")
++        print("   }\\")
++        print("}")
++        print("")
+ 
+ 
+ 
+@@ -97,8 +97,8 @@ def b_k(k, n):
+ 
+ 
+ def gen_specialization(degree, T):
+-    print '  // we want to specialize each one of the {T2} SIMD-thread to a combination of the last {T} variables'.format(T2=1<<T,T=T)
+-    print '  simd_t v[{T}];'.format(T=T)
++    print('  // we want to specialize each one of the {T2} SIMD-thread to a combination of the last {T} variables'.format(T2=1<<T,T=T))
++    print('  simd_t v[{T}];'.format(T=T))
+     assert (T >= 2 and T <= 4)
+     size = 32 >> T
+     s = ['0'*size, 'f'*size]
+@@ -108,10 +108,10 @@ def gen_specialization(degree, T):
+         for j in range(1 << T):
+             if ((j*size)%8 == 0 and j != 0):
+                 v += ',0x'
+-            v += s[j%m/(m >> 1)]
++            v += s[int(j%m/(m >> 1))]
+         m = m << 1
+-        print(v + ');')
+-    print ''
++        print((v + ');'))
++    print('')
+ 
+     idx = [ "idx_{0}".format(j) for j in range(degree) ] # indices for the loops
+     letters = [ 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'o', 'p', 'q', 'r', 's', 't' ]
+@@ -119,23 +119,23 @@ def gen_specialization(degree, T):
+     for updater_degree in range(1, degree+1):
+         for updatee_degree in range(updater_degree):
+ 
+-            print '  // updates degree-{0} term with degree-{1} terms'.format(updatee_degree, updater_degree)
++            print('  // updates degree-{0} term with degree-{1} terms'.format(updatee_degree, updater_degree))
+             
+             # loops over the updatee indices
+             if updatee_degree > 0:
+-                print '  for(int {idx}=0; {idx}<n-{T}; {idx}++)'.format(idx=idx[updatee_degree-1], T=2)
++                print('  for(int {idx}=0; {idx}<n-{T}; {idx}++)'.format(idx=idx[updatee_degree-1], T=2))
+             for i in range(updatee_degree-2, -1, -1):
+-                print '{pad}for(int {idx}=0; {idx}<{prev_idx}; {idx}++)'.format(pad='  '*(updatee_degree-i), idx=idx[i], prev_idx=idx[i+1])
++                print('{pad}for(int {idx}=0; {idx}<{prev_idx}; {idx}++)'.format(pad='  '*(updatee_degree-i), idx=idx[i], prev_idx=idx[i+1]))
+ 
+             # loops over the updater indices
+-            print '  {pad}for(int {idx}=0; {idx}<{T}; {idx}++)'.format(idx=letters[updater_degree-updatee_degree-1], T=T, pad='  '*updatee_degree)
++            print('  {pad}for(int {idx}=0; {idx}<{T}; {idx}++)'.format(idx=letters[updater_degree-updatee_degree-1], T=T, pad='  '*updatee_degree))
+             for i in range(updater_degree-updatee_degree-1):
+-                print '  {pad}for(int {idx}=0; {idx}<{prev_idx}; {idx}++)'.format(pad='  '*(updatee_degree+i+1), idx=letters[updater_degree-updatee_degree-2-i], prev_idx=letters[updater_degree-updatee_degree-i-1],T=T)
++                print('  {pad}for(int {idx}=0; {idx}<{prev_idx}; {idx}++)'.format(pad='  '*(updatee_degree+i+1), idx=letters[updater_degree-updatee_degree-2-i], prev_idx=letters[updater_degree-updatee_degree-i-1],T=T))
+             updatee = data_reference('F', idx[:updatee_degree])
+-            updater = data_reference('F', idx[:updatee_degree] + map(lambda x:"n-{T}+{x}".format(T=T,x=x), letters[:updater_degree-updatee_degree]))
+-            monomial = string.join(map( lambda i:'v[{0}]'.format(i), letters[:updater_degree-updatee_degree]), " & ")
+-            print "  {pad}{LHS} ^= {RHS} & ({monomial});".format(pad='  '*updater_degree, LHS=updatee, RHS=updater, monomial=monomial)
+-            print ''
++            updater = data_reference('F', idx[:updatee_degree] + ["n-{T}+{x}".format(T=T,x=x) for x in letters[:updater_degree-updatee_degree]])
++            monomial = " & ".join(['v[{0}]'.format(i) for i in letters[:updater_degree-updatee_degree]])
++            print("  {pad}{LHS} ^= {RHS} & ({monomial});".format(pad='  '*updater_degree, LHS=updatee, RHS=updater, monomial=monomial))
++            print('')
+ 
+ 
+ def gen_main_function_name(degree, simd=False, T=2, n_eliminated_derivatives=0):
+@@ -160,166 +160,166 @@ def gen_main(degree, L, unrolling=True,
+         reverse_indices = indices
+         if reverse:
+             reverse_indices.reverse()
+-        lut_indices = map( lambda i: 'idx_{i}(LUT, {indices})'.format(i=i+1, indices = string.join(reverse_indices[:i+1], ", ")), range(w))
+-        print '    {pad}STEP_{w}( {indices}, {i_idx} );'.format( i_idx=i_idx, pad='  '*w, w=w, indices=string.join(lut_indices, ", ") )
++        lut_indices = ['idx_{i}(LUT, {indices})'.format(i=i+1, indices = ", ".join(reverse_indices[:i+1])) for i in range(w)]
++        print('    {pad}STEP_{w}( {indices}, {i_idx} );'.format( i_idx=i_idx, pad='  '*w, w=w, indices=", ".join(lut_indices) ))
+         
+ 
+   # this has been moved to the all_functions.h (autogenerated) file
+   #  if with_assembly:
+   #      print 'extern void func_deg_{d}_el_{el}(__m128i *F, __m128i **F_sp, void *buf, uint64_t *num, uint64_t idx);\n'.format(d=degree, el=n_eliminated_derivatives);
+ 
+-    print ''
+-    print 'typedef struct {'
+-    print '  uint64_t int_idx;'
+-    print '  uint32_t mask;'
+-    print '} solution_t;'
+-    print ''
++    print('')
++    print('typedef struct {')
++    print('  uint64_t int_idx;')
++    print('  uint32_t mask;')
++    print('} solution_t;')
++    print('')
+  
+-    print '// generated with L = {L}'.format(L=L)
+-    print gen_main_function_name(degree, simd, T, n_eliminated_derivatives), '{'
++    print('// generated with L = {L}'.format(L=L))
++    print(gen_main_function_name(degree, simd, T, n_eliminated_derivatives), '{')
+     if simd:
+-        print '  const __m128i simd_zero = _mm_setzero_si128();'
+-        print ''
+-        print '  // *****initialise an SIMD version of the constants and internal state'
+-        print '  const int N = n_monomials(n, {0});'.format(degree)
+-        print '  simd_t * F = NULL;'
+-        print '  int foo = posix_memalign((void **) &F, sizeof(simd_t), N*sizeof(simd_t));'
+-        print '  if (foo != 0 || F == NULL) {'
+-        print '    perror("[fes/enumeration/simd]");'
+-        print '    return;'
+-        print '  }'
++        print('  const __m128i simd_zero = _mm_setzero_si128();')
++        print('')
++        print('  // *****initialise an SIMD version of the constants and internal state')
++        print('  const int N = n_monomials(n, {0});'.format(degree))
++        print('  simd_t * F = NULL;')
++        print('  int foo = posix_memalign((void **) &F, sizeof(simd_t), N*sizeof(simd_t));')
++        print('  if (foo != 0 || F == NULL) {')
++        print('    perror("[fes/enumeration/simd]");')
++        print('    return;')
++        print('  }')
+ 
+-        print '  for(int i=0; i<N; i++)'
+-        print '    F[i] = _mm_set1_epi{}(nonsimd_F[i]);  // expand all the coefficients into SIMD vectors'.format(128 >> T)
+-        print ''
+-        print '  uint64_t everything_start_time = rdtsc();'
++        print('  for(int i=0; i<N; i++)')
++        print('    F[i] = _mm_set1_epi{}(nonsimd_F[i]);  // expand all the coefficients into SIMD vectors'.format(128 >> T))
++        print('')
++        print('  uint64_t everything_start_time = rdtsc();')
+         gen_specialization(T=T, degree=degree)
+-        print '  if (verbose) printf("fes: specialization = %" PRIu64 " cycles\\n", rdtsc()-everything_start_time);'
++        print('  if (verbose) printf("fes: specialization = %" PRIu64 " cycles\\n", rdtsc()-everything_start_time);')
+ 
+-    print '  #define QUIT() { \\'
++    print('  #define QUIT() { \\')
+     if simd:
+-        print '    if (F != NULL) free(F); \\' 
+-    print '    return; \\'
+-    print '  }'
+-    print ''
++        print('    if (F != NULL) free(F); \\')
++    print('    return; \\')
++    print('  }')
++    print('')
+ 
+-    print '  uint64_t init_start_time = rdtsc();'
++    print('  uint64_t init_start_time = rdtsc();')
+     gen_init_code(degree)
+-    print '  if (verbose) printf("fes: initialisation = %" PRIu64 " cycles\\n", rdtsc()-init_start_time);'
++    print('  if (verbose) printf("fes: initialisation = %" PRIu64 " cycles\\n", rdtsc()-init_start_time);')
+     
+     size_pack_of_solution = 65536
+-    print '  uint64_t enumeration_start_time = rdtsc();'
+-    print '  uint64_t n_solutions_found = 0;'
+-    print '  uint64_t current_solution_index = 0;'
+-    print '  uint64_t pack_of_solution[{0}];'.format(size_pack_of_solution)
+-    print '  solution_t solution_buffer[{0}];'.format( (1 << L) + (1 << degree) )
+-    print ''
+-    print '  #define FLUSH_SOLUTIONS() { \\'
+-    print '    if ((*callback)(callback_state, current_solution_index, pack_of_solution)) \\'
+-    print '      QUIT(); \\'
+-    print '    }'
+-    print ''
+-    print '  #define PUSH_SOLUTION(current_solution) { \\'
+-    print '    pack_of_solution[current_solution_index] = current_solution; \\'
+-    print '    current_solution_index++; \\'
+-    print '    if (current_solution_index == {0})'.format(size_pack_of_solution) + '{ \\'
+-    print '      FLUSH_SOLUTIONS(); \\'
+-    print '      current_solution_index = 0; \\'
+-    print '    } \\'
+-    print '  }'
+-    print ''
++    print('  uint64_t enumeration_start_time = rdtsc();')
++    print('  uint64_t n_solutions_found = 0;')
++    print('  uint64_t current_solution_index = 0;')
++    print('  uint64_t pack_of_solution[{0}];'.format(size_pack_of_solution))
++    print('  solution_t solution_buffer[{0}];'.format( (1 << L) + (1 << degree) ))
++    print('')
++    print('  #define FLUSH_SOLUTIONS() { \\')
++    print('    if ((*callback)(callback_state, current_solution_index, pack_of_solution)) \\')
++    print('      QUIT(); \\')
++    print('    }')
++    print('')
++    print('  #define PUSH_SOLUTION(current_solution) { \\')
++    print('    pack_of_solution[current_solution_index] = current_solution; \\')
++    print('    current_solution_index++; \\')
++    print('    if (current_solution_index == {0})'.format(size_pack_of_solution) + '{ \\')
++    print('      FLUSH_SOLUTIONS(); \\')
++    print('      current_solution_index = 0; \\')
++    print('    } \\')
++    print('  }')
++    print('')
+     size = 1 << (4 - T)
+     unit = (1 << size)-1
+-    print '  #define CHECK_SOLUTIONS() { \\'
+-    print '    for(uint64_t i=0; i<n_solutions_found; i++){ \\'
++    print('  #define CHECK_SOLUTIONS() { \\')
++    print('    for(uint64_t i=0; i<n_solutions_found; i++){ \\')
+     for i in range(1 << T):
+-        print '      if (solution_buffer[i].mask & 0x{0:04x}) \\'.format(unit << size*i)
+-        print '        PUSH_SOLUTION(to_gray(solution_buffer[i].int_idx) + {0}*(1ll << (n-{T}))); \\'.format((1 << T) - 1 - i, T=T)
+-    print '    } \\'
+-    print '    n_solutions_found = 0; \\'
+-    print '  }'
++        print('      if (solution_buffer[i].mask & 0x{0:04x}) \\'.format(unit << size*i))
++        print('        PUSH_SOLUTION(to_gray(solution_buffer[i].int_idx) + {0}*(1ll << (n-{T}))); \\'.format((1 << T) - 1 - i, T=T))
++    print('    } \\')
++    print('    n_solutions_found = 0; \\')
++    print('  }')
+ 
+-    print ''
+-    print '  // special case for i=0'
+-    print '  const uint64_t weight_0_start = 0;'
+-    print '  STEP_0(0);'
+-    print ''
+-    print '  // from now on, hamming weight is >= 1'
++    print('')
++    print('  // special case for i=0')
++    print('  const uint64_t weight_0_start = 0;')
++    print('  STEP_0(0);')
++    print('')
++    print('  // from now on, hamming weight is >= 1')
+     for w in range(degree-1):
+         if w == 0:
+             if simd:
+-                print '  {pad}for(int {idx}=0; {idx}<n-{T}; {idx}++) {{'.format(pad='  '*w, idx=idx[w],T=T)
++                print('  {pad}for(int {idx}=0; {idx}<n-{T}; {idx}++) {{'.format(pad='  '*w, idx=idx[w],T=T))
+             else:
+-                print '  {pad}for(int {idx}=0; {idx}<n    ; {idx}++) {{'.format(pad='  '*w, idx=idx[w])
++                print('  {pad}for(int {idx}=0; {idx}<n    ; {idx}++) {{'.format(pad='  '*w, idx=idx[w]))
+ 
+         else:
+-            print '  {pad}for(int {idx}=0; {idx}<{prev_idx}; {idx}++) {{'.format(pad='  '*w, idx=idx[w], prev_idx=idx[w-1])            
+-        print ''
+-        print '    {pad}// special case when i has hamming weight exactly {w}'.format(pad='  '*w,w=w+1)
+-        print '    {pad}const uint64_t weight_{w}_start = weight_{wm1}_start + (1ll << idx_{wm1});'.format(pad='  '*w, w=w+1, wm1 = w)
++            print('  {pad}for(int {idx}=0; {idx}<{prev_idx}; {idx}++) {{'.format(pad='  '*w, idx=idx[w], prev_idx=idx[w-1]))
++        print('')
++        print('    {pad}// special case when i has hamming weight exactly {w}'.format(pad='  '*w,w=w+1))
++        print('    {pad}const uint64_t weight_{w}_start = weight_{wm1}_start + (1ll << idx_{wm1});'.format(pad='  '*w, w=w+1, wm1 = w))
+         invoke_step(idx[:w+1], "weight_{w}_start".format(w=w+1), reverse=True)
+-        print ''
++        print('')
+ 
+-    print '  {pad}// we are now inside the critical part where the hamming weight is known to be >= {d}'.format(pad='  '*degree, d=degree)
+-    print '  {pad}// Thus, there are no special cases from now on'.format(pad='  '*degree)
+-    print ''
+-    print '  {pad}// Because of the last step, the current iteration counter is a multiple of {L} plus one'.format( pad='  '*degree, L=1<<L)
+-    print '  {pad}// This loop sets it to `rolled_end`, which is a multiple of {L}, if possible'.format( pad='  '*degree, L=1<<L)
+-    print ''
+-    print '{pad}const uint64_t rolled_end = weight_{w}_start + (1ll << min({L}, idx_{d}));'.format( pad='  '*degree, d=degree-2, w=degree-1,L=L )    
+-    print '{pad}for(uint64_t i=1 + weight_{w}_start; i< rolled_end; i++) {{'.format( pad='  '*degree, w=degree-1 )
+-    print ''
++    print('  {pad}// we are now inside the critical part where the hamming weight is known to be >= {d}'.format(pad='  '*degree, d=degree))
++    print('  {pad}// Thus, there are no special cases from now on'.format(pad='  '*degree))
++    print('')
++    print('  {pad}// Because of the last step, the current iteration counter is a multiple of {L} plus one'.format( pad='  '*degree, L=1<<L))
++    print('  {pad}// This loop sets it to `rolled_end`, which is a multiple of {L}, if possible'.format( pad='  '*degree, L=1<<L))
++    print('')
++    print('{pad}const uint64_t rolled_end = weight_{w}_start + (1ll << min({L}, idx_{d}));'.format( pad='  '*degree, d=degree-2, w=degree-1,L=L ))
++    print('{pad}for(uint64_t i=1 + weight_{w}_start; i< rolled_end; i++) {{'.format( pad='  '*degree, w=degree-1 ))
++    print('')
+ 
+     def gen_k_i_s():
+-        print '{pad}      int pos = 0;'.format(pad='  '*degree)
+-        print '{pad}      uint64_t _i = i;'.format(pad='  '*degree)
++        print('{pad}      int pos = 0;'.format(pad='  '*degree))
++        print('{pad}      uint64_t _i = i;'.format(pad='  '*degree))
+ 
+         for i in range(1, degree+1):
+-            print '{pad}      while ((_i & 0x0001) == 0) {{ _i >>= 1; pos++; }}'.format( pad='  '*(degree))
+-            print '{pad}      const int {k} = pos;'.format( pad='  '*(degree), k=k[i] )
++            print('{pad}      while ((_i & 0x0001) == 0) {{ _i >>= 1; pos++; }}'.format( pad='  '*(degree)))
++            print('{pad}      const int {k} = pos;'.format( pad='  '*(degree), k=k[i] ))
+             if i != degree:
+-                print '{pad}      _i >>= 1; pos++;'.format( pad='  '*(degree))
++                print('{pad}      _i >>= 1; pos++;'.format( pad='  '*(degree)))
+ 
+ 
+     gen_k_i_s()
+     invoke_step(k[1:], "i")
+-    print '{pad}}}'.format( pad='  '*degree )
++    print('{pad}}}'.format( pad='  '*degree ))
+ 
+-    print ''
+-    print '{pad}CHECK_SOLUTIONS();'.format( pad='  '*degree )
+-    print ''
++    print('')
++    print('{pad}CHECK_SOLUTIONS();'.format( pad='  '*degree ))
++    print('')
+ 
+-    print '{pad}// Here, the number of iterations to perform is (supposedly) sufficiently large'.format( pad='  '*degree )
+-    print '{pad}// We will therefore unroll the loop {L} times'.format( pad='  '*degree,L=1<<L )
+-    print ''
+-    print '{pad}// unrolled critical section where the hamming weight is >= {degree}'.format( pad='  '*degree, degree=degree)
+-    print '{pad}for(uint64_t j={L}; j<(1ull << idx_{d}); j+={L}) {{'.format( pad='  '*degree, d=degree-2, L=1<<L ) 
++    print('{pad}// Here, the number of iterations to perform is (supposedly) sufficiently large'.format( pad='  '*degree ))
++    print('{pad}// We will therefore unroll the loop {L} times'.format( pad='  '*degree,L=1<<L ))
++    print('')
++    print('{pad}// unrolled critical section where the hamming weight is >= {degree}'.format( pad='  '*degree, degree=degree))
++    print('{pad}for(uint64_t j={L}; j<(1ull << idx_{d}); j+={L}) {{'.format( pad='  '*degree, d=degree-2, L=1<<L ))
+ 
+     # this rolled version of the critical loop is known to work properly
+     # it is used for debugging
+     if not unrolling:
+-        print '{pad}  for(int k=0; k<{L}; k++) {{ // pretend-unroll'.format( pad='  '*degree, L=1<<L)
+-        print '{pad}      const uint64_t i = j + weight_{w}_start + k;'.format(pad='  '*degree, w=degree-1)
++        print('{pad}  for(int k=0; k<{L}; k++) {{ // pretend-unroll'.format( pad='  '*degree, L=1<<L))
++        print('{pad}      const uint64_t i = j + weight_{w}_start + k;'.format(pad='  '*degree, w=degree-1))
+         gen_k_i_s()
+         invoke_step(k[1:], "i")
+-        print '{pad}    }}'.format( pad='  '*degree )
++        print('{pad}    }}'.format( pad='  '*degree ))
+ 
+     else: # this is the actual, fast, unrolled version
+-        print '{pad}      const uint64_t i = j + weight_{w}_start;'.format(pad='  '*degree, w=degree-1)
++        print('{pad}      const uint64_t i = j + weight_{w}_start;'.format(pad='  '*degree, w=degree-1))
+         gen_k_i_s()
+ 
+         eliminated_indices = get_idx_list.get_degD_idx_list(degree, L, n_eliminated_derivatives)
+         if eliminated_indices != []:
+-            print '{pad}      // this version of the code assumes that: '.format(pad='  '*degree)
++            print('{pad}      // this version of the code assumes that: '.format(pad='  '*degree))
+             for i in eliminated_indices:
+-                print '{pad}      // F[ {idx} ] = 0'.format(pad='  '*degree, idx=i)
++                print('{pad}      // F[ {idx} ] = 0'.format(pad='  '*degree, idx=i))
+ 
+         # set the "greek letters shortcuts"
+         unknown_indices = []
+         for foo in range(degree):
+             unknown_indices.append( k[foo+1] )
+             unlookable_part = [ "LUT[{tab}][{idx}]".format(tab=len(unknown_indices)-1-i, idx=unknown_indices[i]) for i in range(len(unknown_indices)) ]
+-            print '{pad}      const int {greek} = {stuff};'.format( pad='  '*(degree), greek=greek[i], stuff=string.join(unlookable_part,"+" ))
++            print('{pad}      const int {greek} = {stuff};'.format( pad='  '*(degree), greek=greek[len(unknown_indices)-1], stuff="+".join(unlookable_part)))
+ 
+         # each time a greek letter is used, the offset is increased by one. This table stores the offsets
+         current_counter = [0] * degree
+@@ -343,90 +343,90 @@ def gen_main(degree, L, unrolling=True,
+             #outputs the step
+             if (not with_assembly) or unroll_step == 0:
+                 if hw == degree and known_indices[hw-1] in eliminated_indices:
+-                    print '{pad}      STEP_{d}({indices}, i + {k});'.format( pad='  '*degree, d=degree-1, indices=string.join(indices[:hw-1],', '), k=unroll_step)   
++                    print('{pad}      STEP_{d}({indices}, i + {k});'.format( pad='  '*degree, d=degree-1, indices=', '.join(indices[:hw-1]), k=unroll_step))
+                 else:
+-                    print '{pad}      STEP_{d}({indices}, i + {k});'.format( pad='  '*degree, d=degree, indices=string.join(indices,', '), k=unroll_step)
++                    print('{pad}      STEP_{d}({indices}, i + {k});'.format( pad='  '*degree, d=degree, indices=', '.join(indices), k=unroll_step))
+ 
+                 if with_assembly:
+ #                    sp_list = [ 'F + ' + a for a in greek[:degree-1] ] ## known to work
+                     sp_list = [ a+'*16' for a in greek[:degree-1] ]
+-                    msg = '{pad}      uint64_t F_sp[ {d} ] = {{ {sp} }};'.format( pad='  '*degree, d=degree-1, sp=string.join(sp_list, ', ') )
+-                    print msg
+-                    print '{pad}      func_deg_{d}_T_{T}_el_{el}(F, &F_sp[0], solution_buffer, &n_solutions_found, i);'.format(pad='  '*degree, d=degree, el=n_eliminated_derivatives,T=T)
++                    msg = '{pad}      uint64_t F_sp[ {d} ] = {{ {sp} }};'.format( pad='  '*degree, d=degree-1, sp=', '.join(sp_list) )
++                    print(msg)
++                    print('{pad}      func_deg_{d}_T_{T}_el_{el}(F, &F_sp[0], solution_buffer, &n_solutions_found, i);'.format(pad='  '*degree, d=degree, el=n_eliminated_derivatives,T=T))
+        
+ # unrolling is over
+ 
+-    print ''
+-    print '{pad}      CHECK_SOLUTIONS();'.format( pad='  '*degree )
+-    print '{pad}  }}'.format( pad='  '*degree )
+-    print ''
++    print('')
++    print('{pad}      CHECK_SOLUTIONS();'.format( pad='  '*degree ))
++    print('{pad}  }}'.format( pad='  '*degree ))
++    print('')
+ 
+     ## end unrolled loop
+     for w in range(degree-1):
+-        print '{pad}}}'.format( pad='  '*(degree-w-1) )
++        print('{pad}}}'.format( pad='  '*(degree-w-1) ))
+     
+-    print '  FLUSH_SOLUTIONS();'
+-    print '  uint64_t end_time = rdtsc();'
+-    print  ' if (verbose) printf("fes: enumeration+check = %" PRIu64 " cycles\\n", end_time - enumeration_start_time);'
++    print('  FLUSH_SOLUTIONS();')
++    print('  uint64_t end_time = rdtsc();')
++    print(' if (verbose) printf("fes: enumeration+check = %" PRIu64 " cycles\\n", end_time - enumeration_start_time);')
+ 
+-    print '  QUIT();'
+-    print '}'
++    print('  QUIT();')
++    print('}')
+ 
+ 
+ 
+ def gen_boilerplate_header(simd=False):
+-    print "#include <stdio.h>"
+-    print "#include <inttypes.h>"
+-    print "#include <stdlib.h>"
++    print("#include <stdio.h>")
++    print("#include <inttypes.h>")
++    print("#include <stdlib.h>")
+     if simd:
+-        print '#include <emmintrin.h>'
+-        print 'typedef __m128i simd_t;'
+-    print ''
+-    print '#include "fes.h"'
+-    print '#include "idx_LUT.h"'
+-    print ''
++        print('#include <emmintrin.h>')
++        print('typedef __m128i simd_t;')
++    print('')
++    print('#include "fes.h"')
++    print('#include "idx_LUT.h"')
++    print('')
+ 
+ def gen_tester(degree):
+     idx = [ "idx_{0}".format(j) for j in range(degree+1) ] # indices for the loop
+     vs = [ "v_{0}".format(j) for j in range(degree+1) ] # indices for the loop
+ 
+-    print 'pck_vector_t packed_eval_deg_{0}(LUT_t LUT, int n, pck_vector_t F[], uint64_t i) {{'.format(degree)
+-    print '  // first expand the values of the variables from `i`'
+-    print '  pck_vector_t v[n];'
+-    print '  for(int k=0; k<n; k++) {'
+-    print '    v[k] = 0;'
+-    print '    if (i & 0x0001) v[k] = 0xffffffff;'
+-    print '    i = (i >> 1ll);'
+-    print '  }'
+-    print ''
+-    print '  pck_vector_t y = F[0];'
+-    print ''
+-    print '  for(int {idx}=0; {idx}<n; {idx}++) {{'.format(idx=idx[0])
+-    print '    const pck_vector_t {v} = v[{idx}];'.format(v=vs[0], idx=idx[0])
+-    print ''
++    print('pck_vector_t packed_eval_deg_{0}(LUT_t LUT, int n, pck_vector_t F[], uint64_t i) {{'.format(degree))
++    print('  // first expand the values of the variables from `i`')
++    print('  pck_vector_t v[n];')
++    print('  for(int k=0; k<n; k++) {')
++    print('    v[k] = 0;')
++    print('    if (i & 0x0001) v[k] = 0xffffffff;')
++    print('    i = (i >> 1ll);')
++    print('  }')
++    print('')
++    print('  pck_vector_t y = F[0];')
++    print('')
++    print('  for(int {idx}=0; {idx}<n; {idx}++) {{'.format(idx=idx[0]))
++    print('    const pck_vector_t {v} = v[{idx}];'.format(v=vs[0], idx=idx[0]))
++    print('')
+     for i in range(1,degree+1):
+-        print '  {pad}// computes the contribution of degree-{i} terms'.format(pad='  '*i, i=i)
+-        print '  {pad}y ^= {coeff} & {v};'.format(pad='  '*i, coeff=data_reference('F', list(reversed(idx[:i]))), v=vs[i-1])
+-        print ''
++        print('  {pad}// computes the contribution of degree-{i} terms'.format(pad='  '*i, i=i))
++        print('  {pad}y ^= {coeff} & {v};'.format(pad='  '*i, coeff=data_reference('F', list(reversed(idx[:i]))), v=vs[i-1]))
++        print('')
+         if i < degree:
+-            print '  {pad}for(int {idx}=0; {idx}<{prev_idx}; {idx}++) {{'.format(pad='  '*i, idx=idx[i], prev_idx=idx[i-1])
+-            print '    {pad}const pck_vector_t {v} = {prev_v} & v[{idx}];'.format(pad='  '*i, idx=idx[i], v=vs[i], prev_v=vs[i-1])
+-        print ''
+-    print ' ', '}'*(degree)
+-    print ''
+-    print '  return y;'
+-    print '}'
++            print('  {pad}for(int {idx}=0; {idx}<{prev_idx}; {idx}++) {{'.format(pad='  '*i, idx=idx[i], prev_idx=idx[i-1]))
++            print('    {pad}const pck_vector_t {v} = {prev_v} & v[{idx}];'.format(pad='  '*i, idx=idx[i], v=vs[i], prev_v=vs[i-1]))
++        print('')
++    print(' ', '}'*(degree))
++    print('')
++    print('  return y;')
++    print('}')
+ 
+ 
+ if len(sys.argv) < 2:
+-    print "usage: enumeration_generator.py [filename]"
++    print("usage: enumeration_generator.py [filename]")
+     exit(1)
+ 
+ 
+ try:
+-    filename = string.split(sys.argv[1], ".")
++    filename = sys.argv[1].split(".")
+     assert(filename[1] == 'c')
+-    parts = string.split(filename[0], "_")
++    parts = filename[0].split("_")
+     assert (parts[0] == "autogenerated")
+     mode = parts[1] 
+     assert (parts[2] == "deg")
+@@ -439,7 +439,7 @@ try:
+     elif mode == "c-sequential":
+         gen_boilerplate_header()
+         gen_steps(degree)
+-        gen_main(degree, 10-degree/2, unrolling=True)
++        gen_main(degree, int(10-degree/2), unrolling=True)
+ 
+     else:  # we generate the actual enumerations
+         assert (parts[4] == "T")
+@@ -451,14 +451,14 @@ try:
+         if mode == "c-simd":
+             gen_boilerplate_header(simd=True)
+             gen_steps(degree,simd=True)
+-            gen_main(degree, 10-degree/2, unrolling=True, simd=True, T=T, n_eliminated_derivatives=eliminated_terms)
++            gen_main(degree, int(10-degree/2), unrolling=True, simd=True, T=T, n_eliminated_derivatives=eliminated_terms)
+         elif mode == "c-simd-with-asm":
+             gen_boilerplate_header(simd=True)
+             gen_steps(degree,simd=True, T=T)
+-            gen_main(degree, 10-degree/2, unrolling=True, simd=True, T=T, with_assembly=True, n_eliminated_derivatives=eliminated_terms)
++            gen_main(degree, int(10-degree/2), unrolling=True, simd=True, T=T, with_assembly=True, n_eliminated_derivatives=eliminated_terms)
+         else:
+             raise ValueError
+   
+ except ValueError:
+-    print "the name of the file should follow the template 'autogenerated_[mode]_deg_[degree]_el_[number of eliminated coeffs].c'"
++    print("the name of the file should follow the template 'autogenerated_[mode]_deg_[degree]_el_[number of eliminated coeffs].c'")
+     exit(1)
+--- src/src/gen_built_sources.py.orig	2013-09-18 02:06:55.000000000 -0600
++++ src/src/gen_built_sources.py	2019-02-06 11:37:56.394681851 -0700
+@@ -12,7 +12,7 @@ def gen_built_sources_am():
+         built_sources.append('autogenerated_c-sequential_deg_{0}.c'.format(d))
+         built_sources.append('autogenerated_c-tester_deg_{0}.c'.format(d))
+         
+-    print "plain_c_sources = ", string.join(built_sources, ' \\\n\t')
++    print("plain_c_sources = ", ' \\\n\t'.join(built_sources))
+ 
+ # C boilerplate, ASM + SIMD case
+     built_sources = []
+@@ -23,7 +23,7 @@ def gen_built_sources_am():
+         for T in [2,3,4]:
+             built_sources.append('autogenerated_c-simd-with-asm_deg_{0}_T_{1}_el_0.c'.format(d,T))
+ 
+-    print "asm_c_sources= ", string.join(built_sources, ' \\\n\t')
++    print("asm_c_sources= ", ' \\\n\t'.join(built_sources))
+ 
+ # assembly code, ASM + SIMD case
+     built_sources = []
+@@ -32,36 +32,36 @@ def gen_built_sources_am():
+     for d in range(2,max_d+1):
+         for T in [2,3,4]:
+             built_sources.append('autogenerated_asm_deg_{0}_T_{1}_el_0.s'.format(d,T))
+-    print "asm_sources = ", string.join(built_sources, ' \\\n\t')
++    print("asm_sources = ", ' \\\n\t'.join(built_sources))
+ 
+ def gen_include():
+-    print '#include <inttypes.h>'
+-    print '#include <emmintrin.h>'
+-    print '#include "fes.h"'
+-    print ''
++    print('#include <inttypes.h>')
++    print('#include <emmintrin.h>')
++    print('#include "fes.h"')
++    print('')
+ 
+     # plain C stuff
+     for d in range(2,max_d+1):
+-        print 'void exhaustive_ia32_deg_{0}(LUT_t LUT, int n, pck_vector_t F[], solution_callback_t callback, void* callback_state, int verbose); // autogenerated_sequential_deg_{0}.c'.format(d)
+-        print 'pck_vector_t packed_eval_deg_{0}(LUT_t LUT, int n, pck_vector_t F[], uint64_t i); // autogenerated_tester_deg_{0}.c'.format(d)
+-    print ''
++        print('void exhaustive_ia32_deg_{0}(LUT_t LUT, int n, pck_vector_t F[], solution_callback_t callback, void* callback_state, int verbose); // autogenerated_sequential_deg_{0}.c'.format(d))
++        print('pck_vector_t packed_eval_deg_{0}(LUT_t LUT, int n, pck_vector_t F[], uint64_t i); // autogenerated_tester_deg_{0}.c'.format(d))
++    print('')
+ 
+     # SIMD stuff
+-    print '#ifdef HAVE_SSE2'
++    print('#ifdef HAVE_SSE2')
+     for d in range(2,max_d+1):
+         for T in [2,3,4]:
+-            print 'void exhaustive_sse2_deg_{0}_T_{1}_el_0(LUT_t LUT, int n, pck_vector_t nonsimd_F[], solution_callback_t callback, void* callback_state, int verbose); // autogenerated_simd_deg_{0}_T_{1}_el_0.c'.format(d,T)
++            print('void exhaustive_sse2_deg_{0}_T_{1}_el_0(LUT_t LUT, int n, pck_vector_t nonsimd_F[], solution_callback_t callback, void* callback_state, int verbose); // autogenerated_simd_deg_{0}_T_{1}_el_0.c'.format(d,T))
+ 
+ 
+-    print '#ifdef HAVE_64_BITS' 
++    print('#ifdef HAVE_64_BITS')
+     for d in range(2,max_d+1):
+         for T in [2,3,4]:
+-            print 'extern void func_deg_{0}_T_{1}_el_0(__m128i *F, uint64_t *F_sp, void *buf, uint64_t *num, uint64_t idx); // autogenerated_asm_deg_{0}_T_{1}_el_0.s'.format(d,T)
++            print('extern void func_deg_{0}_T_{1}_el_0(__m128i *F, uint64_t *F_sp, void *buf, uint64_t *num, uint64_t idx); // autogenerated_asm_deg_{0}_T_{1}_el_0.s'.format(d,T))
+ 
+-    print '#endif'
+-    print '#endif'
++    print('#endif')
++    print('#endif')
+ 
+-    print ''
++    print('')
+         
+ 
+ if sys.argv[1] == 'built_sources.am':
+--- src/src/gen_qhasm_code.py.orig	2013-09-18 02:06:55.000000000 -0600
++++ src/src/gen_qhasm_code.py	2019-02-06 11:38:23.290365251 -0700
+@@ -30,57 +30,57 @@ greek = [ "alpha", "beta", "gamma", "del
+ 
+ 
+ def gen_start_asm(d, el, T):
+-    print ".text"
+-    print ".p2align 5"
+-    print ''
+-    print ".globl _func_deg_{0}_T_{1}_el_{2}".format(d, T, el)
+-    print ".globl func_deg_{0}_T_{1}_el_{2}".format(d, T, el)
+-    print '### void func_deg_{0}_T_{1}_el_{2}(__m128i *F, __m128i **F_sp, void *buf, uint64_t *num, uint64_t idx);'.format(d, T, el)
+-    print ''
+-    print '# the ABI (http://www.x86-64.org/documentation/abi.pdf) says that...' 
+-    print '# A) we should preserve the values of %rbx, %rbp, %r12...%r15 [callee-save registers]'
+-    print '# B) We will receive the arguments of the function in registers :'
+-    print '#       the pointer to F should be in %rdi'
+-    print '#       the pointer to *F_sp should be in %rsi'
+-    print '#       the pointer to buf should be in %rdx'
+-    print '#       the pointer to num should be in %rcx'
+-    print '#       idx should be in %r8'
+-    print ''
+-    print "_func_deg_{0}_T_{1}_el_{2}:".format(d, T, el)
+-    print "func_deg_{0}_T_{1}_el_{2}:".format(d, T, el)
+-    print ''
+-    print '# intialize our stack frame'
+-    print "mov %rsp, %r11"
+-    print "and $31, %r11"
+-    print "add $64, %r11"
+-    print "sub %r11, %rsp"
+-    print ''
+-    print '# save the callee-save registers'
+-    print "movq %r11, 0(%rsp)" # apparently useless ?
+-    print "movq %r12, 8(%rsp)"
+-    print "movq %r13, 16(%rsp)"
+-    print "movq %r14, 24(%rsp)"
+-    print "movq %r15, 32(%rsp)"
+-    print "movq %rbx, 40(%rsp)"
+-    print "movq %rbp, 48(%rsp)"
++    print(".text")
++    print(".p2align 5")
++    print('')
++    print(".globl _func_deg_{0}_T_{1}_el_{2}".format(d, T, el))
++    print(".globl func_deg_{0}_T_{1}_el_{2}".format(d, T, el))
++    print('### void func_deg_{0}_T_{1}_el_{2}(__m128i *F, __m128i **F_sp, void *buf, uint64_t *num, uint64_t idx);'.format(d, T, el))
++    print('')
++    print('# the ABI (http://www.x86-64.org/documentation/abi.pdf) says that...')
++    print('# A) we should preserve the values of %rbx, %rbp, %r12...%r15 [callee-save registers]')
++    print('# B) We will receive the arguments of the function in registers :')
++    print('#       the pointer to F should be in %rdi')
++    print('#       the pointer to *F_sp should be in %rsi')
++    print('#       the pointer to buf should be in %rdx')
++    print('#       the pointer to num should be in %rcx')
++    print('#       idx should be in %r8')
++    print('')
++    print("_func_deg_{0}_T_{1}_el_{2}:".format(d, T, el))
++    print("func_deg_{0}_T_{1}_el_{2}:".format(d, T, el))
++    print('')
++    print('# intialize our stack frame')
++    print("mov %rsp, %r11")
++    print("and $31, %r11")
++    print("add $64, %r11")
++    print("sub %r11, %rsp")
++    print('')
++    print('# save the callee-save registers')
++    print("movq %r11, 0(%rsp)") # apparently useless ?
++    print("movq %r12, 8(%rsp)")
++    print("movq %r13, 16(%rsp)")
++    print("movq %r14, 24(%rsp)")
++    print("movq %r15, 32(%rsp)")
++    print("movq %rbx, 40(%rsp)")
++    print("movq %rbp, 48(%rsp)")
+ 
+ def gen_end_asm():
+-    print '# restore the callee-save registers'
+-    print  "movq 0(%rsp),%r11"
+-    print  "movq 8(%rsp),%r12"
+-    print  "movq 16(%rsp),%r13"
+-    print  "movq 24(%rsp),%r14"
+-    print  "movq 32(%rsp),%r15"
+-    print  "movq 40(%rsp),%rbx"
+-    print  "movq 48(%rsp),%rbp"
+-    print ''
+-    print '# restore the stack frame'
+-    print "add %r11,%rsp"
+-    print ''
+-    print '# prepare the return value (?!?)'
+-    print 'mov %rdi,%rax' #    <---- if I understand correctly, this is useless, because %rdi is not callee-save, and the return type is void
+-    print 'mov %rsi,%rdx' #    <---- if I understand correctly, this is useless, because %rsi is not callee-save, and the return type is void
+-    print 'ret'
++    print('# restore the callee-save registers')
++    print("movq 0(%rsp),%r11")
++    print("movq 8(%rsp),%r12")
++    print("movq 16(%rsp),%r13")
++    print("movq 24(%rsp),%r14")
++    print("movq 32(%rsp),%r15")
++    print("movq 40(%rsp),%rbx")
++    print("movq 48(%rsp),%rbp")
++    print('')
++    print('# restore the stack frame')
++    print("add %r11,%rsp")
++    print('')
++    print('# prepare the return value (?!?)')
++    print('mov %rdi,%rax') #    <---- if I understand correctly, this is useless, because %rdi is not callee-save, and the return type is void
++    print('mov %rsi,%rdx') #    <---- if I understand correctly, this is useless, because %rsi is not callee-save, and the return type is void
++    print('ret')
+ 
+ varMap = {} # mapping from variable names to registers
+ 
+@@ -96,22 +96,22 @@ regs32 = [ '%edi', '%esi', '%edx', '%ecx
+ def dec_xmm(var):
+     global xmms_ptr
+     assert(xmms_ptr < len(xmms))
+-    assert(var not in varMap.keys())
++    assert(var not in list(varMap.keys()))
+     varMap[var] = xmms[ xmms_ptr ]
+     xmms_ptr += 1
+-    print "# variable {0} maps to {1}".format(var, varMap[var])
++    print("# variable {0} maps to {1}".format(var, varMap[var]))
+ 
+ def dec_reg(var, bits=64):
+     global regs_ptr
+     assert(regs_ptr < len(regs))
+-    assert(var not in varMap.keys())
++    assert(var not in list(varMap.keys()))
+     assert(bits == 64 or bits == 32)
+     if bits == 64:
+         varMap[var] = regs[ regs_ptr ]
+     else:
+         varMap[var] = regs32[ regs_ptr ]
+     regs_ptr += 1
+-    print "# variable {0} maps to {1}".format(var, varMap[var])
++    print("# variable {0} maps to {1}".format(var, varMap[var]))
+ 
+ 
+ 
+@@ -145,23 +145,23 @@ def gen_asm(degree, L, el, T):
+ 
+     ############################# INIT #########################################
+ 
+-    print ''
+-    print "# load the most-frequently used derivatives (F[0]...F[13]) into %xmm registers"
++    print('')
++    print("# load the most-frequently used derivatives (F[0]...F[13]) into %xmm registers")
+     for i in mfu_indices:
+-        print ("movdqa {0}({1}), {2}   ## {2} = F[{3}]".format(i*16, varMap['F'], varMap['F',i], i))
++        print(("movdqa {0}({1}), {2}   ## {2} = F[{3}]".format(i*16, varMap['F'], varMap['F',i], i)))
+ 
+-    print ''
+-    print '# loads the ''greek letters'', i.e. indices of the derivatives that do not fit into registers'
++    print('')
++    print('# loads the ''greek letters'', i.e. indices of the derivatives that do not fit into registers')
+     for i in range(degree-1):
+-       print 'movq {0}({1}), {2}   ## {2} = {3}'.format(i*8, varMap['F_sp'], varMap[greek[i]], greek[i])
++       print('movq {0}({1}), {2}   ## {2} = {3}'.format(i*8, varMap['F_sp'], varMap[greek[i]], greek[i]))
+         
+-    print ''
+-    print '# note that at this point, the register holding `F_sp` [', varMap['F_sp'], '] could be used for something else'
+-    print ''
++    print('')
++    print('# note that at this point, the register holding `F_sp` [', varMap['F_sp'], '] could be used for something else')
++    print('')
+ 
+-    print '# initialize the last things that remains to be intialized...'
+-    print 'movq ({0}), {1}  ## num = *num_ptr'.format(varMap[ 'num_ptr' ], varMap[ 'num' ])
+-    print 'pxor {0}, {0}   ## zero = 0'.format(varMap['zero'])
++    print('# initialize the last things that remains to be intialized...')
++    print('movq ({0}), {1}  ## num = *num_ptr'.format(varMap[ 'num_ptr' ], varMap[ 'num' ]))
++    print('pxor {0}, {0}   ## zero = 0'.format(varMap['zero']))
+ 
+ 
+ 
+@@ -172,13 +172,13 @@ def gen_asm(degree, L, el, T):
+     current_counter = [1] * degree
+ 
+     #this actually unrols the loop
+-    print ''
++    print('')
+     for unroll_step in range(1, 1 << L):   
+ 
+         
+             hw = min( degree, popcount(unroll_step) )
+-            print ''
+-            print '##### step {0} [hw={1}]'.format(unroll_step, hw)
++            print('')
++            print('##### step {0} [hw={1}]'.format(unroll_step, hw))
+     
+             # computes the set of indices for this step
+             # the first `hw` ones can be determined at compile-time (i.e. b_k(unroll_step) is defined for k<=hw),
+@@ -213,7 +213,7 @@ def gen_asm(degree, L, el, T):
+ 
+             # now, if the degree-d derivative has been cancelled, we stop considering it.
+             if hw >= degree and indices[degree][0] in cancelled_indices:
+-                print '##### taking advantage of the fact that F[ {0} ] is known to be zero'.format( indices[degree][0] )
++                print('##### taking advantage of the fact that F[ {0} ] is known to be zero'.format( indices[degree][0] ))
+                 indices.pop()
+ 
+             # decorate the assembly code, print summary of the step
+@@ -223,7 +223,7 @@ def gen_asm(degree, L, el, T):
+                     stuff.append( '{0}[ {1} + {2} ]'.format(X, Y, i) )
+                 else:
+                     stuff.append( '{0}[ {1} ]'.format(X, i) )
+-            print '##### {0}{1}'.format( string.join(stuff, ' ^= ( '), ')'*(degree+1) )
++            print('##### {0}{1}'.format( ' ^= ( '.join(stuff), ')'*(degree+1) ))
+ 
+             # know, we start worrying about the implementation of the unformal statement we just printed
+ 
+@@ -235,7 +235,7 @@ def gen_asm(degree, L, el, T):
+                     locations[ i ] = 'reg'
+ 
+             # we actually print the XORs
+-            print ''
++            print('')
+             for i in range(len(indices)-2, -1,-1):
+ 
+                 first_xor = (i == len(indices)-2) # first XOR of the step ?
+@@ -251,45 +251,45 @@ def gen_asm(degree, L, el, T):
+ 
+                 # reg ^= reg
+                 if locations[source] == 'reg':
+-                    print 'pxor {0}, {1}'.format(varMap['F', source_offset],  varMap['F', target_offset])
++                    print('pxor {0}, {1}'.format(varMap['F', source_offset],  varMap['F', target_offset]))
+ 
+                 #reg ^= mem
+                 elif locations[target] == 'reg': 
+                     if first_xor:
+                         # no need to fire up the `sum` machinery, because there is a single XOR from memory
+-                        print 'pxor {0}, {1}'.format(mem_reference(indices[source]), varMap['F', target_offset])
++                        print('pxor {0}, {1}'.format(mem_reference(indices[source]), varMap['F', target_offset]))
+ 
+                     else:
+-                        print 'pxor {0}, {1}'.format(varMap['sum'], varMap['F', target_offset] )
++                        print('pxor {0}, {1}'.format(varMap['sum'], varMap['F', target_offset] ))
+                         
+                 # mem ^= mem
+                 else: 
+                     if first_xor:
+                         # initialize the `sum` register
+-                        print ('movdqa {0}, {1}'.format(mem_reference(indices[source]), varMap['sum']));
++                        print(('movdqa {0}, {1}'.format(mem_reference(indices[source]), varMap['sum'])));
+ 
+                     # implicitly, `sum` already contains the "source"
+-                    print 'pxor {0}, {1}'.format( mem_reference( indices[target]), varMap['sum'] )
+-                    print 'movdqa {0}, {1}'.format( varMap['sum'], mem_reference( indices[target] ))
++                    print('pxor {0}, {1}'.format( mem_reference( indices[target]), varMap['sum'] ))
++                    print('movdqa {0}, {1}'.format( varMap['sum'], mem_reference( indices[target] )))
+ 
+ 
+             # after the XORs, the comparison
+ 
+             if (T == 2):
+-                print 'pcmpeqd {0}, {1}'.format(varMap['F',0], varMap['zero'])
++                print('pcmpeqd {0}, {1}'.format(varMap['F',0], varMap['zero']))
+             elif(T == 3):
+-                print 'pcmpeqw {0}, {1}'.format(varMap['F',0], varMap['zero'])
++                print('pcmpeqw {0}, {1}'.format(varMap['F',0], varMap['zero']))
+             elif (T == 4):
+-                print 'pcmpeqb {0}, {1}'.format(varMap['F',0], varMap['zero'])
+-            print 'pmovmskb {0}, {1}'.format(varMap['zero'], varMap['mask']) ########## MODIFY MODIFY MODIFY ####
+-            print 'test {0}, {0}'.format(varMap['mask'])
+-            print 'jne ._report_solution_{0}'.format(unroll_step)
+-            print '._step_{0}_end:'.format(unroll_step)
++                print('pcmpeqb {0}, {1}'.format(varMap['F',0], varMap['zero']))
++            print('pmovmskb {0}, {1}'.format(varMap['zero'], varMap['mask'])) ########## MODIFY MODIFY MODIFY ####
++            print('test {0}, {0}'.format(varMap['mask']))
++            print('jne ._report_solution_{0}'.format(unroll_step))
++            print('._step_{0}_end:'.format(unroll_step))
+ 
+ 
+-    print '#############################'
+-    print '# end of the unrolled chunk #'
+-    print '#############################'
++    print('#############################')
++    print('# end of the unrolled chunk #')
++    print('#############################')
+ 
+  
+     print ('jmp ._ending')
+@@ -300,43 +300,43 @@ def gen_asm(degree, L, el, T):
+ 
+     ########################## WHEN SOLUTION FOUND #######################################
+ 
+-    print '########### now the code that reports solutions'
++    print('########### now the code that reports solutions')
+     for i in range(1, (1<<L)):
+ 
+-        print '# here, it has been found that GrayCode(idx+{0}) is a solution'.format(i)
++        print('# here, it has been found that GrayCode(idx+{0}) is a solution'.format(i))
+ 
+-        print '._report_solution_{0}:'.format(i)
+-        print 'pxor {0}, {0}'.format(varMap['zero'])  #zero = 0
+-        print 'shl $4, {0}'.format(varMap['num'])     #num <<= 4";
+-        print 'mov {0}, {1}'.format(varMap['idx'], varMap['tmp'])         #tmp = idx;
+-        print 'add ${0}, {1}'.format(i, varMap['tmp'])         #tmp += i
+-        print 'movq {0}, ({1}, {2})'.format(varMap['tmp'], varMap['buf'], varMap['num']) # buf[num].idx = tmp
+-        print 'add $8, {0}'.format(varMap['num']) #num += 8
+-        print 'movl {0}, ({1}, {2})'.format(varMap['mask'], varMap['buf'], varMap['num']) #buf[num].mask = mask
+-        print 'shr $4, {0}'.format(varMap['num']) #num >>= 4
+-        print 'add  $1, {0}'.format(varMap['num']) #num += 1
+-        print 'jmp ._step_{0}_end'.format(i)  # we return to the enumeration
+-        print ''
++        print('._report_solution_{0}:'.format(i))
++        print('pxor {0}, {0}'.format(varMap['zero']))  #zero = 0
++        print('shl $4, {0}'.format(varMap['num']))     #num <<= 4";
++        print('mov {0}, {1}'.format(varMap['idx'], varMap['tmp']))         #tmp = idx;
++        print('add ${0}, {1}'.format(i, varMap['tmp']))         #tmp += i
++        print('movq {0}, ({1}, {2})'.format(varMap['tmp'], varMap['buf'], varMap['num'])) # buf[num].idx = tmp
++        print('add $8, {0}'.format(varMap['num'])) #num += 8
++        print('movl {0}, ({1}, {2})'.format(varMap['mask'], varMap['buf'], varMap['num'])) #buf[num].mask = mask
++        print('shr $4, {0}'.format(varMap['num'])) #num >>= 4
++        print('add  $1, {0}'.format(varMap['num'])) #num += 1
++        print('jmp ._step_{0}_end'.format(i))  # we return to the enumeration
++        print('')
+ 
+     ################### End of the function #########################"
+-    print "._ending:\n";
++    print("._ending:\n")
+ 
+-    print ''
+-    print '# copy back to memory the (most-frequently used) derivatives that were held in registers'
++    print('')
++    print('# copy back to memory the (most-frequently used) derivatives that were held in registers')
+     for i in mfu_indices:
+-        print 'movdqa {0}, {1}({2})'.format(varMap['F', i], i*16, varMap['F'])
++        print('movdqa {0}, {1}({2})'.format(varMap['F', i], i*16, varMap['F']))
+ 
+-    print ''
+-    print '# store the number of solutions found in this chunk'
+-    print 'movq {0}, 0({1})'.format(varMap['num'], varMap['num_ptr'])
+-    print ''
++    print('')
++    print('# store the number of solutions found in this chunk')
++    print('movq {0}, 0({1})'.format(varMap['num'], varMap['num_ptr']))
++    print('')
+ 
+ 
+ ################### Execute ########################
+ 
+-filename = string.split(sys.argv[1], ".")
++filename = sys.argv[1].split(".")
+ assert(filename[1] == 's')
+-parts = string.split(filename[0], "_")
++parts = filename[0].split("_")
+ assert (parts[0] == "autogenerated")
+ assert (parts[1] == 'asm')
+ assert (parts[2] == "deg")
+@@ -349,5 +349,5 @@ el = int( parts[7] )
+ assert(T >= 2 and T <= 4)
+ 
+ gen_start_asm(d, el, T)
+-gen_asm(d, 10-d/2, el, T)
++gen_asm(d, int(10-d/2), el, T)
+ gen_end_asm()
+--- src/src/plop.py.orig	2013-09-18 02:06:55.000000000 -0600
++++ src/src/plop.py	2019-02-06 11:34:58.315778133 -0700
+@@ -1,13 +1,13 @@
+ import time
+ import string
+ 
+-n = int( raw_input() )
++n = int( input() )
+ debut = []
+ fin   = []
+ conferences   = [True] * n
+ 
+ for i in range(n):
+-    date_debut, duree = string.split( raw_input(), ";" )
++    date_debut, duree = input().split( ";" )
+     ts = time.mktime( time.strptime( date_debut, "%Y-%m-%d") )
+     debut.append( (ts, i) )
+     fin.append( (ts + 86400*int(duree), i) )
+@@ -27,4 +27,4 @@ try:
+         while not conferences[conf]:
+             now,conf = fin.pop()
+ except IndexError:
+-    print N
++    print(N)
+--- src/test/test_suite.py.orig	2013-09-18 02:06:55.000000000 -0600
++++ src/test/test_suite.py	2019-02-06 11:54:15.199910019 -0700
+@@ -1,4 +1,4 @@
+-#!/usr/bin/python
++#!/usr/bin/python3
+ 
+ from subprocess import check_output
+ 
+@@ -32,15 +32,15 @@ def run_test(program, idx, random_seed=N
+     numeric_args = list(idx) + [0, random_seed]
+     if T != None:
+         numeric_args.append(T)
+-    args = [program] + map(lambda x:"{0}".format(x), numeric_args)
+-    print "   ---> ", " ".join(args)
+-    program_output = check_output(args)
++    args = [program] + ["{0}".format(x) for x in numeric_args]
++    print("   ---> ", " ".join(args))
++    program_output = check_output(args).decode('utf-8')
+     values = { int(line,16) for line in program_output.split("\n") if line != "" }
+     if values != output[idx]:
+-        print "TEST FAILED: {0} {1}".format(program, idx)
++        print("TEST FAILED: {0} {1}".format(program, idx))
+         exit(1)
+ 
+-print "*) NAIVE algorithm"      
++print("*) NAIVE algorithm")
+ run_test("./semislow", (19,16,2))
+ run_test("./semislow", (17,15,3))
+ run_test("./semislow", (16,13,4))
+@@ -53,7 +53,7 @@ run_test("./semislow", (14,11,6))
+ #run_test("./semislow_specialize", ["15", "12", "5"], (15,12,5))
+ #run_test("./semislow_specialize", ["14", "11", "6"], (14,11,6))
+ 
+-print "*) C code"      
++print("*) C code")
+ run_test("./fast", (19,16,2))
+ run_test("./fast", (17,15,3))
+ run_test("./fast", (16,13,4))
+@@ -66,14 +66,14 @@ run_test("./fast", (14,11,6))
+ #run_test("./simd", (15,12,5))
+ #run_test("./simd", (14,11,6))
+ 
+-print "*) SIMD, T=2"
++print("*) SIMD, T=2")
+ run_test("./simd", (19,16,2),T=2)
+ run_test("./simd", (17,15,3),T=2)
+ run_test("./simd", (16,13,4),T=2)
+ run_test("./simd", (15,12,5),T=2)
+ run_test("./simd", (14,11,6),T=2)
+ 
+-print "*) SIMD, T=3"
++print("*) SIMD, T=3")
+ run_test("./simd", (19,16,2),T=3)
+ run_test("./simd", (17,15,3),T=3)
+ run_test("./simd", (16,13,4),T=3)
+@@ -92,12 +92,12 @@ run_test("./simd", (14,11,6),T=3)
+ # run_test("./simd_el", (16,13,4,2))
+ # run_test("./simd_el", (16,13,4,8))
+ 
+-print "*) MOEBIUS inversion"
++print("*) MOEBIUS inversion")
+ run_test("./moebius", (19,16,2))
+ run_test("./moebius", (17,15,3))
+ run_test("./moebius", (16,13,4))
+ run_test("./moebius", (15,12,5))
+ run_test("./moebius", (14,11,6))
+ 
+-print ""
+-print "ALL TEST PASSED"
++print("")
++print("ALL TEST PASSED")

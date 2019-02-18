@@ -5,6 +5,7 @@ License:	GPLv2+
 Summary:	Fast Exhaustive Search
 URL:		http://www.lifl.fr/~bouillag/fes/
 Source0:	https://bitbucket.org/fes/fes/downloads/%{name}-%{version}.spkg
+ExclusiveArch:	%{ix86} x86_64
 # Fix various problems with the configure script and configuration headers
 # 1. @VARIABLE@ expressions are not replaced in src/config.h
 # 2. The Fedora optimization flag is overridden with -O3
@@ -98,7 +99,7 @@ make -C src check
 - Add -python3 patch due to python2 removal in Rawhide
 - Add -const patch to fix warnings
 - Add -undef patch to fix the build on non-x86_64 arches
-- Drop ExclusiveArch as the SSE2 code is now optional
+- Build for i386 too as the SSE2 code is now optional
 - Reduce texlive BRs
 
 * Thu Jan 31 2019 Fedora Release Engineering <releng@fedoraproject.org> - 0.1-16

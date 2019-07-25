@@ -1,6 +1,6 @@
 Name:		fes
 Version:	0.2
-Release:	1%{?dist}
+Release:	2%{?dist}
 License:	GPLv2+
 Summary:	Fast Exhaustive Search
 URL:		http://www.lifl.fr/~bouillag/fes/
@@ -91,6 +91,9 @@ make -C src check
 %{_libdir}/libfes.so
 
 %changelog
+* Thu Jul 25 2019 Fedora Release Engineering <releng@fedoraproject.org> - 0.2-2
+- Rebuilt for https://fedoraproject.org/wiki/Fedora_31_Mass_Rebuild
+
 * Wed Feb  6 2019 Jerry James <loganjerry@gmail.com> - 0.2-1
 - New upstream version, fixes FTBFS (bz 1603963, 1674882)
 - Correct license from GPLv3+ to GPLv2+

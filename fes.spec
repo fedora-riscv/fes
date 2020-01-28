@@ -1,6 +1,6 @@
 Name:		fes
 Version:	0.2
-Release:	2%{?dist}
+Release:	3%{?dist}
 License:	GPLv2+
 Summary:	Fast Exhaustive Search
 URL:		http://www.lifl.fr/~bouillag/fes/
@@ -91,6 +91,9 @@ make -C src check
 %{_libdir}/libfes.so
 
 %changelog
+* Tue Jan 28 2020 Fedora Release Engineering <releng@fedoraproject.org> - 0.2-3
+- Rebuilt for https://fedoraproject.org/wiki/Fedora_32_Mass_Rebuild
+
 * Thu Jul 25 2019 Fedora Release Engineering <releng@fedoraproject.org> - 0.2-2
 - Rebuilt for https://fedoraproject.org/wiki/Fedora_31_Mass_Rebuild
 

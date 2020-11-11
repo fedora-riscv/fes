@@ -3,7 +3,7 @@ Version:	0.2
 Release:	4%{?dist}
 License:	GPLv2+
 Summary:	Fast Exhaustive Search
-URL:		http://www.lifl.fr/~bouillag/fes/
+URL:		https://cbouilla.github.io/implementation.html
 Source0:	https://bitbucket.org/fes/fes/downloads/%{name}-%{version}.spkg
 ExclusiveArch:	%{ix86} x86_64
 # Fix various problems with the configure script and configuration headers
@@ -22,6 +22,7 @@ Patch3:		%{name}-undef.patch
 
 BuildRequires:	gcc
 BuildRequires:	libtool
+BuildRequires:	make
 BuildRequires:	python3-devel
 BuildRequires:	tex(latex)
 BuildRequires:	tex(aeguill.sty)
@@ -64,7 +65,7 @@ pushd src
 %endif
     --disable-static --enable-dynamic
 
-    make %{?_smp_mflags}
+    %make_build
 
     pushd doc
 	pdflatex doc.tex
@@ -73,7 +74,7 @@ pushd src
 popd
 
 %install
-make install DESTDIR=%{buildroot} -C src
+%make_install -C src
 rm %{buildroot}%{_libdir}/libfes.la
 
 %check

@@ -1,6 +1,6 @@
 Name:		fes
 Version:	0.2
-Release:	7%{?dist}
+Release:	8%{?dist}
 License:	GPLv2+
 Summary:	Fast Exhaustive Search
 URL:		https://cbouilla.github.io/implementation.html
@@ -92,6 +92,9 @@ make -C src check
 %{_libdir}/libfes.so
 
 %changelog
+* Thu Jul 21 2022 Fedora Release Engineering <releng@fedoraproject.org> - 0.2-8
+- Rebuilt for https://fedoraproject.org/wiki/Fedora_37_Mass_Rebuild
+
 * Thu Jan 20 2022 Fedora Release Engineering <releng@fedoraproject.org> - 0.2-7
 - Rebuilt for https://fedoraproject.org/wiki/Fedora_36_Mass_Rebuild
 

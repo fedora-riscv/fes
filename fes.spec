@@ -1,11 +1,11 @@
 Name:		fes
 Version:	0.2
-Release:	10%{?dist}
+Release:	10.rv64%{?dist}
 License:	GPL-2.0-or-later
 Summary:	Fast Exhaustive Search
 URL:		https://www-almasty.lip6.fr/~bouillaguet/implementation.html
 Source0:	https://bitbucket.org/fes/fes/downloads/%{name}-%{version}.spkg
-ExclusiveArch:	%{ix86} x86_64
+ExclusiveArch:	%{ix86} x86_64 riscv64
 # Fix various problems with the configure script and configuration headers
 # 1. @VARIABLE@ expressions are not replaced in src/config.h
 # 2. The Fedora optimization flag is overridden with -O3
